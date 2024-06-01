@@ -1,4 +1,4 @@
-﻿/*
+/*
  * STEFFile.h
  *
  *  Created on: Sep 17, 2018
@@ -10,7 +10,7 @@
 
 #include "Ptypes.h"
 #include "EFFile.h"
-#define MAX_ST_EFFILE 30
+#define MAX_ST_EFFILE 22
 
 typedef struct STEFFileSystem;
 
@@ -23,7 +23,7 @@ typedef struct STEFFile {
   EF_NAME Index;
   int resultLen;
   char Id[3];
-  char name[20];
+  char name[10];
   char result[1024 + 1];
   char resultPath[1024 + 1];
   char (*FileParse)(std::string &data, STEFFileSystem *fileSystem);

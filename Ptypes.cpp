@@ -1,4 +1,4 @@
-ï»¿/*
+/*
  * Ptypes.cpp
  *
  *  Created on: Sep 11, 2018
@@ -19,13 +19,13 @@
 //
 //    char current_absolute_path[MAX_SIZE];
 //    memset(current_absolute_path, 0, MAX_SIZE);
-//    //è·å–å½“å‰ç¨‹åºç»å¯¹è·¯å¾„
+//    //»ñÈ¡µ±Ç°³ÌĞò¾ø¶ÔÂ·¾¶
 //    int cnt = readlink("/proc/self/exe", current_absolute_path, MAX_SIZE);
 //    if (cnt < 0 || cnt >= MAX_SIZE) {
 //        LOGD("***Error***\n");
 //        return (-1);
 //    }
-//    //è·å–å½“å‰ç›®å½•ç»å¯¹è·¯å¾„ï¼Œå³å»æ‰ç¨‹åºå
+//    //»ñÈ¡µ±Ç°Ä¿Â¼¾ø¶ÔÂ·¾¶£¬¼´È¥µô³ÌĞòÃû
 //    int i;
 //    for (i = cnt; i >= 0; --i) {
 //        if (current_absolute_path[i] == '/') {
@@ -34,7 +34,7 @@
 //        }
 //    }
 //
-//    //åˆ›å»ºå½“å‰è·¯å¾„
+//    //´´½¨µ±Ç°Â·¾¶
 //    int len = strlen(current_absolute_path);
 //    for (int i = 0; path[i] != '\0'; i++) {
 //        current_absolute_path[i + len] = path[i];
@@ -84,7 +84,7 @@ std::string HexStringToBinary(const std::string& src) {
     return dest;
 }
 
-// æœ¬åœ°å’Œç½‘ç»œå­—èŠ‚(BigEndian)é¡ºåºè½¬æ¢
+// ±¾µØºÍÍøÂç×Ö½Ú(BigEndian)Ë³Ğò×ª»»
 unsigned short HostToNetworkUINT16(unsigned short n) {
     int k = 1;
     if (*((char*)&k)) {

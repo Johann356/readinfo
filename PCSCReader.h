@@ -1,9 +1,17 @@
-ï»¿#pragma once
+#pragma once
 #include<string>
 #include<atlstr.h>
+#include <openssl/des.h>
+#include <openssl/aes.h>
+#include <openssl/evp.h>
+#include <openssl/ec.h>
+#include <openssl/obj_mac.h>
 #include "STEFFile.h"
 #include "EFFile.h"
 #include "MRTD.h"
+#define EF_CARDACCESS_FILENAME	    "USB_TEMP\\EF_CardAccess.dat"
+#define EF_COM_FILENAME	    "USB_TEMP\\EF_COM.dat"
+#define EF_SOD_FILENAME	    "USB_TEMP\\EF_SOD.dat"
 
 using namespace std;
 std::string BYTE2string(byte* bByte, UINT iLength);
@@ -17,7 +25,7 @@ public:
 	unsigned char CardType;
 	struct ChipAuthenticData
 	{
-		int BAC = 1;
+		int BAC;
 		int PACE;
 		int CA;
 		int AA;
@@ -64,7 +72,7 @@ public:
 		int iDG14;
 		int iDG15;
 		int iDG16;
-		int iSod;
+		int iSOD;
 		int iCardAcess;
 		int iCardSecurity;
 	} ChipData_Doc9303_Result;
@@ -75,13 +83,13 @@ public:
 		this->CardType = type;
 		return true;
 	}
-	//åˆå§‹åŒ–è¯»å¡å™¨
+	//³õÊ¼»¯¶Á¿¨Æ÷
 	int Initalize();
-	//è¿æ¥è¯»å¡å™¨
+	//Á¬½Ó¶Á¿¨Æ÷
 	int Connect(string& atr );
-	//å‘é€apduå‘½ä»¤
+	//·¢ËÍapduÃüÁî
 	int Apdusend(string& sendData, BYTE* RecvBuff, DWORD& RecvLen);
-	//è·å–å¤ä½ä¿¡æ¯
+	//»ñÈ¡¸´Î»ĞÅÏ¢
 	int Getatr(string& atr);
 	int DissConnect();
 	char BuildKencAndKmac(const std::string& mrzInfo,
@@ -108,6 +116,42 @@ public:
 
 	char ICCReadEF(std::string& KSenc, std::string& KSmac, std::string& SSC, EF_NAME name,
 		std::string& EF_Data);
+	char ICCReadEFPACE(std::string& KSenc, std::string& KSmac, std::string& SSC, EF_NAME name,
+		std::string& EF_Data,int keyLength,const std::string&);
+	char SecureCommunicationSeletAPPPACE(
+		std::string& cmdData,
+		const std::string& KSenc,
+		const std::string& KSmac,
+		std::string& SSC,
+		int keyLength,
+		const std::string& cipherAlgorithm);
+	/**
+ * ÏÂÃæÕâÒ»ÏµÁĞ½Ó¿ÚÊ±ÎªÁËÔö¼ÓÒ»Ğ©»¤ÕÕµÄÖ§³Ö£¬ÕâÀà»¤ÕÕÃ»ÓĞ°²È«¼ÓÃÜ£¬²»ĞèÒª¸ù¾İ»ú¶ÁÂë½¨Á¢°²È«Í¨ĞÅ
+ * Ö±½ÓÍ¨¹ıAPDUÃüÁî¶ÁÈ¡Ğ¾Æ¬
+ */
+	char DirectReadEF(
+		EF_NAME name,
+		std::string& EF_Data);
+
+	//STEFFile
+	char DirectCommunication(
+		STEFFile* file,
+		std::string& data);
+
+	//STEFFile
+	char DirectSelectFile(
+		STEFFile* file);
+
+	char DirectReadFile(
+		unsigned short offset,
+		unsigned short len,
+		std::string& data);
+
+	char DirectReadBinary(
+		unsigned short offset,
+		unsigned short chunkSize,
+		std::string& data);
+
 
 	char SecureCommunication(
 		STEFFile* file,
@@ -121,7 +165,7 @@ public:
 		const std::string& KSenc,
 		const std::string& KSmac,
 		std::string& SSC);
-	char DirectCommunicationSelectFile();
+
 	char SecureCommunicationReadBinary(
 		const std::string& KSenc,
 		const std::string& KSmac,
@@ -139,23 +183,94 @@ public:
 		std::string& data);
 
 	char ReadEchipInfo(std::string& codetonfc);
+	BOOL ReadEChipInfoPACE(std::string& codetonfc);
+	BOOL SelectPACE(std::string& oid);
+	BOOL ICCRequestRandomNumberPACE(__out std::string& Z_ICC);
+	char PostPassportCommand(std::string& request, std::string& response);
 
-	void ChipReaderReadFileResultOperate(EF_NAME name, char* result, unsigned char type);
+	BOOL BuildKpai(
+		__in const std::string& mrzInfo,
+		__out std::string& Kpai,
+		__out std::string& hash_aogorithm);
+
+	BOOL BuildKencandKmacPACE(
+		__in const std::string& KA,
+		__in int keyLength,
+		__in std::string cipherAlgorithm,
+		__out std::string& Kenc,
+		__out std::string& Kmac);
+
+	BOOL map_G_hat(EC_POINT*& G_hat,std::string& S_ICC, std::string& cipherAlgorithm, int keyLength);
+
+	BOOL map_G_hat(BIGNUM*& G_hat, std::string& S_ICC, std::string& cipherAlgorithm, int keyLength);
+
+	BOOL BuildMapKey(std::string& PKmap, std::string& SKmap, int ecc_id);
+
+	BOOL RandomNumberMap(std::string& PKmap_IC, const std::string& PKmap, const std::string& SKmap);
+
+	BOOL MutualAuthenticate(EC_POINT* G_hat, std::string& PKDH_IC, std::string& SKDH_IFD, std::string& PKDH_IFD, int ecc_id);
+
+	BOOL MutualAuthenticate(BIGNUM*& G_hat, std::string& PKDH_IC, std::string& SKDH_IFD, std::string& PKDH_IFD, BIGNUM*& prime);
+
+	BOOL ExchangeT(std::string& TIFD, std::string& TICC_my);
+
+	void ChipReaderReadFileResultOperate(EF_NAME name, char* result, unsigned char type, int length);
 
 	char GetResult(EF_NAME efName, string& retData);
 
 	char EF_DG2_SetResultPath(string path);
+	char SecureCommunicationPACE(
+		STEFFile* file,
+		const std::string& KSenc,
+		const std::string& KSmac,
+		std::string& SSC,
+		std::string& data,
+		int keyLength,
+		const std::string& cipherAlgorithm);
 
+	char SecureCommunicationSelectFilePACE(
+		STEFFile* file,
+		const std::string& KSenc,
+		const std::string& KSmac,
+		std::string& SSC,
+		int keyLength,
+		const std::string& cipherAlgorithm);
+
+	char SecureCommunicationReadBinaryPACE(
+		const std::string& KSenc,
+		const std::string& KSmac,
+		std::string& SSC,
+		unsigned short offset,
+		unsigned short chunkSize,
+		std::string& data,
+		int keyLength,
+		const std::string& cipher_Algorithm);
+
+	char SecureCommunicationReadFilePACE(
+		const std::string& KSenc,
+		const std::string& KSmac,
+		std::string& SSC,
+		unsigned short offset,
+		unsigned short len,
+		std::string& data,
+		int keyLength,
+		const std::string& cipher_Algorithm);
+	int Buildsecp256r1(EC_GROUP*& ec_group);
+	int BuildGFP(DH*& dh,int id);
 	std::string baseFolder;
 
 private:
-	//è¯»å¡å™¨åç§°
+	//¶Á¿¨Æ÷Ãû³Æ
 	CString ReaderName;
-	//ä¸æ™ºèƒ½å¡è¿æ¥çš„å¥æŸ„
+	//ÓëÖÇÄÜ¿¨Á¬½ÓµÄ¾ä±ú
 	SCARDHANDLE	hCard;
 	DWORD m_dAttrib;
 	SCARDCONTEXT hContext;
 	STEFFileSystem st_efs;
+	BOOL ReadBinary_CardAccess(
+		__in UINT16 offset,
+		__in UINT16 chunkSize,
+		__out std::string& data);
 
 
 };

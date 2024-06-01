@@ -1,4 +1,4 @@
-﻿#include "PCSCReader.h"
+#include "PCSCReader.h"
 #include <iostream>
 #include<sstream>
 #include <iomanip>
@@ -372,10 +372,10 @@ int PCSC_GetIDCard() {
 
 }
                                  
-int PCSCGetChip(string& mrz, int cardType, ChipAuthenticData& chipAuthenticData, ChipData_Doc9303& chipData_9303) {
+int PCSCGetChipPACE(string& mrz, int cardType, ChipAuthenticData& chipAuthenticData, ChipData_Doc9303& chipData_9303) {
 	
 	char path_DG2[MAX_PATH];
-	MakeFullPath1(path_DG2, "DG2.bmp");
+	MakeFullPath1(path_DG2, "USB_TEMP//DG2.bmp");
 
 	int ret = -1;
 	PCSCReader pcscReader;
@@ -391,7 +391,6 @@ int PCSCGetChip(string& mrz, int cardType, ChipAuthenticData& chipAuthenticData,
 	//if (atr.size() < 30) return -1;
 	// ISO14443-4 Type B && Type B 
 
-		//string codetonfc = "EJ3584648397102123301122";
 	pcscReader.SetCardType(cardType);
 	pcscReader.mrtd.CardType = pcscReader.CardType;
 	if (!pcscReader.mrtd.Parse(mrz)) {
@@ -400,12 +399,29 @@ int PCSCGetChip(string& mrz, int cardType, ChipAuthenticData& chipAuthenticData,
 	}
 	pcscReader.EF_DG2_SetResultPath(path_DG2);
 	std::string codetonfc = pcscReader.mrtd.mrzInfo.codetonfc;
-	//string codetonfc = "EJ3584648397102123301122";
-	//string codetonfc = "CC6354145097102123301122";
-	//string codetonfc = "EJ3584649496080523301122";
-	//codetonfc = "EJ3584648397102123301122";
-	ret = pcscReader.ReadEchipInfo(codetonfc);
-	if (ret > 0) {
+	//默认用BAC
+	//ret = pcscReader.ReadEchipInfo(codetonfc);
+	//if (!ret)
+	//{
+	//	cout << "BAC FAIL\n";
+	//}
+	//
+	////BAC失败再使用PACE
+	//ret = pcscReader.ReadEChipInfoPACE(codetonfc);
+	//if (!ret)
+	//	cout << "PACE FAIL\n";
+	ret = -1;
+
+
+	ret = pcscReader.ReadEChipInfoPACE(codetonfc);
+	char mypath[256];
+	MakeFullPath1(mypath, "USB_TEMP\\DG15.dat");
+	char SOD_file_path[256];
+	MakeFullPath1(SOD_file_path, "USB_TEMP\\EF_SOD.dat");
+	pcscReader.ActiveAuthentication(mypath);
+	pcscReader.PassiveAuthentication(SOD_file_path);
+
+	if (ret>0) {
 		ret = pcscReader.GetResult(EF_DG1, DG1);
 		if (!ret) {
 			return -1;
@@ -413,24 +429,27 @@ int PCSCGetChip(string& mrz, int cardType, ChipAuthenticData& chipAuthenticData,
 		std::cout << "DG1: " << DG1 << std::endl;
 		chipData_9303.iDG1 = DG1.size();
 		strcpy(chipData_9303.pDG1, DG1.c_str());
-		ret = pcscReader.GetResult(EF_DG11, DG11);
+		/*ret = pcscReader.GetResult(EF_DG11, DG11);
 
 		if (!ret) {
-			return -1;
+			std::cout << "DG11 not exists" << std::endl;
 		}
+		else {
+			getEChipDG11(fullName, selfID);
+			std::cout << "DG11: " << fullName << std::endl;
+			chipData_9303.iDG11 = DG11.size();
+			strcpy(chipData_9303.pDG11, DG11.c_str());
+		}*/
 		int DG2_size = getFileSize1(path_DG2);
 		std::cout << "DG2_size: " << DG2_size << std::endl;
-		getEChipDG11(fullName, selfID);
-		std::cout << "DG11: " << fullName << std::endl;
+		
 		//copy data, maybe cost too much time...
-		chipData_9303.iDG11 = DG11.size();
-		strcpy(chipData_9303.pDG11, DG11.c_str());
 		
 		chipData_9303.iDG2 = pcscReader.ChipData_Doc9303_Result.iDG2;
 		strncpy(chipData_9303.pDG2, pcscReader.ChipData_Doc9303_Result.pDG2, chipData_9303.iDG2);
 		
-		chipData_9303.iSod = pcscReader.ChipData_Doc9303_Result.iSod;
-		strncpy(chipData_9303.pSOD, pcscReader.ChipData_Doc9303_Result.pSOD, chipData_9303.iSod);
+		chipData_9303.iSOD = pcscReader.ChipData_Doc9303_Result.iSOD;
+		strncpy(chipData_9303.pSOD, pcscReader.ChipData_Doc9303_Result.pSOD, chipData_9303.iSOD);
 
 		chipData_9303.iDG15 = pcscReader.ChipData_Doc9303_Result.iDG15;
 		strncpy(chipData_9303.pDG15, pcscReader.ChipData_Doc9303_Result.pDG15, chipData_9303.iDG15);
@@ -442,10 +461,446 @@ int PCSCGetChip(string& mrz, int cardType, ChipAuthenticData& chipAuthenticData,
 	chipAuthenticData.AA = pcscReader.ChipAuthenticResult.AA;
 	chipAuthenticData.PA = pcscReader.ChipAuthenticResult.PA;
 	chipAuthenticData.BAC = pcscReader.ChipAuthenticResult.BAC;
+	chipAuthenticData.PACE = pcscReader.ChipAuthenticResult.PACE;
 	pcscReader.DissConnect();
 	return ret;
 }
 
+int PCSCGetChip_given_three_parts_PACE(string serialnum, string birthdate, string expiredate , int cardType, ChipAuthenticData& chipAuthenticData, ChipData_Doc9303& chipData_9303) {
+	//compute checkbit
+	int check = 0;
+	int weight[3] = { 7,3,1 };
+	for (; serialnum.length() < 9;)
+		serialnum += "<";
+	for (int i=0;i< serialnum.length();i++)
+	{
+		char ch = serialnum[i];
+		if (ch >= '0' && ch <= '9')
+			check += (ch - '0') * weight[i % 3];
+		else if (ch >= 'A' && ch <= 'Z')
+			check += (ch - 'A' + 10) * weight[i % 3];
+		else if (ch == '<')
+			continue;
+	}
+	check = check % 10;
+	std::string serialnum_new = serialnum+to_string(check);
+	check = 0;
+	if (birthdate.length() != 6)
+	{
+		cout << "birthdate.length()!=6";
+		return -1;
+	}
+	for (int i = 0; i < birthdate.length(); i++)
+	{
+		char ch = birthdate[i];
+		if (ch >= '0' && ch <= '9')
+			check += (ch - '0') * weight[i % 3];
+		else if (ch >= 'A' && ch <= 'Z')
+			check += (ch - 'A' + 10) * weight[i % 3];
+		else if (ch == '<')
+			continue;
+	}
+	check = check % 10;
+	std::string birthdate_new = birthdate+to_string(check);
+	check = 0;
+	if (expiredate.length() != 6)
+	{
+		cout << "expiredate.length()!=6";
+		return -1;
+	}
+	for (int i = 0; i < expiredate.length(); i++)
+	{
+		char ch = expiredate[i];
+		if (ch >= '0' && ch <= '9')
+			check += (ch - '0') * weight[i % 3];
+		else if (ch >= 'A' && ch <= 'Z')
+			check += (ch - 'A' + 10) * weight[i % 3];
+		else if (ch == '<')
+			continue;
+	}
+	check = check % 10;
+	std::string expiredate_new = expiredate+to_string(check);
+	check = 0;
+	std::string codetonfc = serialnum_new+birthdate_new+expiredate_new;
+	//
+	char path_DG2[MAX_PATH];
+	MakeFullPath1(path_DG2, "USB_TEMP//DG2.bmp");
+
+	int ret = -1;
+	PCSCReader pcscReader;
+
+	string fullName, selfID;
+	string atr;
+	ret = pcscReader.Initalize();
+	if (ret > 0) {
+		ret = pcscReader.Connect(atr);
+	}
+
+	//cout << "ATR:	" << atr << endl;
+	//if (atr.size() < 30) return -1;
+	// ISO14443-4 Type B && Type B 
+
+	pcscReader.SetCardType(cardType);
+	pcscReader.mrtd.CardType = pcscReader.CardType;
+
+	//if (!pcscReader.mrtd.Parse(mrz)) {
+	//	//LOGE("mrtd.Parse(code) error");
+	//	return -1;
+	//}
+	pcscReader.EF_DG2_SetResultPath(path_DG2);
+	/*std::string codetonfc = pcscReader.mrtd.mrzInfo.codetonfc;*/
+	//默认用BAC
+	//ret = pcscReader.ReadEchipInfo(codetonfc);
+	//if (ret < 0) {
+	//	//BAC失败再使用PACE
+	//	ret = pcscReader.ReadEChipInfoPACE(codetonfc);
+	//}
+	ret = pcscReader.ReadEChipInfoPACE(codetonfc);
+	pcscReader.DissConnect();
+	return ret;
+	if (ret > 0) {
+		ret = pcscReader.GetResult(EF_DG1, DG1);
+		if (!ret) {
+			return -1;
+		}
+		std::cout << "DG1: " << DG1 << std::endl;
+		chipData_9303.iDG1 = DG1.size();
+		strcpy(chipData_9303.pDG1, DG1.c_str());
+		/*ret = pcscReader.GetResult(EF_DG11, DG11);
+
+		if (!ret) {
+			std::cout << "DG11 not exists" << std::endl;
+		}
+		else {
+			getEChipDG11(fullName, selfID);
+			std::cout << "DG11: " << fullName << std::endl;
+			chipData_9303.iDG11 = DG11.size();
+			strcpy(chipData_9303.pDG11, DG11.c_str());
+		}*/
+		int DG2_size = getFileSize1(path_DG2);
+		std::cout << "DG2_size: " << DG2_size << std::endl;
+
+		//copy data, maybe cost too much time...
+
+		chipData_9303.iDG2 = pcscReader.ChipData_Doc9303_Result.iDG2;
+		strncpy(chipData_9303.pDG2, pcscReader.ChipData_Doc9303_Result.pDG2, chipData_9303.iDG2);
+
+		chipData_9303.iSOD = pcscReader.ChipData_Doc9303_Result.iSOD;
+		strncpy(chipData_9303.pSOD, pcscReader.ChipData_Doc9303_Result.pSOD, chipData_9303.iSOD);
+
+		chipData_9303.iDG15 = pcscReader.ChipData_Doc9303_Result.iDG15;
+		strncpy(chipData_9303.pDG15, pcscReader.ChipData_Doc9303_Result.pDG15, chipData_9303.iDG15);
+		ret = 1;
+	}
+	else {
+		ret = -1;
+	}
+	chipAuthenticData.AA = pcscReader.ChipAuthenticResult.AA;
+	chipAuthenticData.PA = pcscReader.ChipAuthenticResult.PA;
+	chipAuthenticData.BAC = pcscReader.ChipAuthenticResult.BAC;
+	chipAuthenticData.PACE = pcscReader.ChipAuthenticResult.PACE;
+	pcscReader.DissConnect();
+	return ret;
+}
+int PCSCGetChip_given_three_parts_BAC(string serialnum, string birthdate, string expiredate, int cardType, ChipAuthenticData& chipAuthenticData, ChipData_Doc9303& chipData_9303) {
+	//compute checkbit
+	int check = 0;
+	int weight[3] = { 7,3,1 };
+	for (; serialnum.length() < 9;)
+		serialnum += "<";
+	for (int i = 0; i < serialnum.length(); i++)
+	{
+		char ch = serialnum[i];
+		if (ch >= '0' && ch <= '9')
+			check += (ch - '0') * weight[i % 3];
+		else if (ch >= 'A' && ch <= 'Z')
+			check += (ch - 'A' + 10) * weight[i % 3];
+		else if (ch == '<')
+			continue;
+	}
+	check = check % 10;
+	std::string serialnum_new = serialnum + to_string(check);
+	check = 0;
+	if (birthdate.length() != 6)
+	{
+		cout << "birthdate.length()!=6";
+		return -1;
+	}
+	for (int i = 0; i < birthdate.length(); i++)
+	{
+		char ch = birthdate[i];
+		if (ch >= '0' && ch <= '9')
+			check += (ch - '0') * weight[i % 3];
+		else if (ch >= 'A' && ch <= 'Z')
+			check += (ch - 'A' + 10) * weight[i % 3];
+		else if (ch == '<')
+			continue;
+	}
+	check = check % 10;
+	std::string birthdate_new = birthdate + to_string(check);
+	check = 0;
+	if (expiredate.length() != 6)
+	{
+		cout << "expiredate.length()!=6";
+		return -1;
+	}
+	for (int i = 0; i < expiredate.length(); i++)
+	{
+		char ch = expiredate[i];
+		if (ch >= '0' && ch <= '9')
+			check += (ch - '0') * weight[i % 3];
+		else if (ch >= 'A' && ch <= 'Z')
+			check += (ch - 'A' + 10) * weight[i % 3];
+		else if (ch == '<')
+			continue;
+	}
+	check = check % 10;
+	std::string expiredate_new = expiredate + to_string(check);
+	check = 0;
+	std::string codetonfc = serialnum_new + birthdate_new + expiredate_new;
+	//
+	char path_DG2[MAX_PATH];
+	MakeFullPath1(path_DG2, "USB_TEMP//DG2.bmp");
+
+	int ret = -1;
+	PCSCReader pcscReader;
+
+	string fullName, selfID;
+	string atr;
+	ret = pcscReader.Initalize();
+	if (ret > 0) {
+		ret = pcscReader.Connect(atr);
+	}
+
+	//cout << "ATR:	" << atr << endl;
+	//if (atr.size() < 30) return -1;
+	// ISO14443-4 Type B && Type B 
+
+	pcscReader.SetCardType(cardType);
+	pcscReader.mrtd.CardType = pcscReader.CardType;
+
+	//if (!pcscReader.mrtd.Parse(mrz)) {
+	//	//LOGE("mrtd.Parse(code) error");
+	//	return -1;
+	//}
+	pcscReader.EF_DG2_SetResultPath(path_DG2);
+	/*std::string codetonfc = pcscReader.mrtd.mrzInfo.codetonfc;*/
+	//默认用BAC
+	//ret = pcscReader.ReadEchipInfo(codetonfc);
+	//if (ret < 0) {
+	//	//BAC失败再使用PACE
+	//	ret = pcscReader.ReadEChipInfoPACE(codetonfc);
+	//}
+	ret = pcscReader.ReadEchipInfo(codetonfc);
+	pcscReader.DissConnect();
+	return ret;
+	if (ret > 0) {
+		ret = pcscReader.GetResult(EF_DG1, DG1);
+		if (!ret) {
+			return -1;
+		}
+		std::cout << "DG1: " << DG1 << std::endl;
+		chipData_9303.iDG1 = DG1.size();
+		strcpy(chipData_9303.pDG1, DG1.c_str());
+		/*ret = pcscReader.GetResult(EF_DG11, DG11);
+
+		if (!ret) {
+			std::cout << "DG11 not exists" << std::endl;
+		}
+		else {
+			getEChipDG11(fullName, selfID);
+			std::cout << "DG11: " << fullName << std::endl;
+			chipData_9303.iDG11 = DG11.size();
+			strcpy(chipData_9303.pDG11, DG11.c_str());
+		}*/
+		int DG2_size = getFileSize1(path_DG2);
+		std::cout << "DG2_size: " << DG2_size << std::endl;
+
+		//copy data, maybe cost too much time...
+
+		chipData_9303.iDG2 = pcscReader.ChipData_Doc9303_Result.iDG2;
+		strncpy(chipData_9303.pDG2, pcscReader.ChipData_Doc9303_Result.pDG2, chipData_9303.iDG2);
+
+		chipData_9303.iSOD = pcscReader.ChipData_Doc9303_Result.iSOD;
+		strncpy(chipData_9303.pSOD, pcscReader.ChipData_Doc9303_Result.pSOD, chipData_9303.iSOD);
+
+		chipData_9303.iDG15 = pcscReader.ChipData_Doc9303_Result.iDG15;
+		strncpy(chipData_9303.pDG15, pcscReader.ChipData_Doc9303_Result.pDG15, chipData_9303.iDG15);
+		ret = 1;
+	}
+	else {
+		ret = -1;
+	}
+	chipAuthenticData.AA = pcscReader.ChipAuthenticResult.AA;
+	chipAuthenticData.PA = pcscReader.ChipAuthenticResult.PA;
+	chipAuthenticData.BAC = pcscReader.ChipAuthenticResult.BAC;
+	chipAuthenticData.PACE = pcscReader.ChipAuthenticResult.PACE;
+	pcscReader.DissConnect();
+	return ret;
+}
+
+int PCSCGetChipPACE(string mrz, int cardType, ChipAuthenticData& chipAuthenticData, ChipData_Doc9303& chipData_9303) {
+
+	char path_DG2[MAX_PATH];
+	MakeFullPath1(path_DG2, "USB_TEMP//DG2.bmp");
+
+	int ret = -1;
+	PCSCReader pcscReader;
+
+	string fullName, selfID;
+	string atr;
+	ret = pcscReader.Initalize();
+	if (ret > 0) {
+		ret = pcscReader.Connect(atr);
+	}
+
+	//cout << "ATR:	" << atr << endl;
+	//if (atr.size() < 30) return -1;
+	// ISO14443-4 Type B && Type B 
+
+	pcscReader.SetCardType(cardType);
+	pcscReader.mrtd.CardType = pcscReader.CardType;
+	if (!pcscReader.mrtd.Parse(mrz)) {
+		//LOGE("mrtd.Parse(code) error");
+		return -1;
+	}
+	pcscReader.EF_DG2_SetResultPath(path_DG2);
+	std::string codetonfc = pcscReader.mrtd.mrzInfo.codetonfc;
+	//默认用BAC
+	//ret = pcscReader.ReadEchipInfo(codetonfc);
+	//if (ret < 0) {
+	//	//BAC失败再使用PACE
+	//	ret = pcscReader.ReadEChipInfoPACE(codetonfc);
+	//}
+	ret = pcscReader.ReadEChipInfoPACE(codetonfc);
+	pcscReader.DissConnect();
+	return ret;
+	if (ret > 0) {
+		ret = pcscReader.GetResult(EF_DG1, DG1);
+		if (!ret) {
+			return -1;
+		}
+		std::cout << "DG1: " << DG1 << std::endl;
+		chipData_9303.iDG1 = DG1.size();
+		strcpy(chipData_9303.pDG1, DG1.c_str());
+		/*ret = pcscReader.GetResult(EF_DG11, DG11);
+
+		if (!ret) {
+			std::cout << "DG11 not exists" << std::endl;
+		}
+		else {
+			getEChipDG11(fullName, selfID);
+			std::cout << "DG11: " << fullName << std::endl;
+			chipData_9303.iDG11 = DG11.size();
+			strcpy(chipData_9303.pDG11, DG11.c_str());
+		}*/
+		int DG2_size = getFileSize1(path_DG2);
+		std::cout << "DG2_size: " << DG2_size << std::endl;
+
+		//copy data, maybe cost too much time...
+
+		chipData_9303.iDG2 = pcscReader.ChipData_Doc9303_Result.iDG2;
+		strncpy(chipData_9303.pDG2, pcscReader.ChipData_Doc9303_Result.pDG2, chipData_9303.iDG2);
+
+		chipData_9303.iSOD = pcscReader.ChipData_Doc9303_Result.iSOD;
+		strncpy(chipData_9303.pSOD, pcscReader.ChipData_Doc9303_Result.pSOD, chipData_9303.iSOD);
+
+		chipData_9303.iDG15 = pcscReader.ChipData_Doc9303_Result.iDG15;
+		strncpy(chipData_9303.pDG15, pcscReader.ChipData_Doc9303_Result.pDG15, chipData_9303.iDG15);
+		ret = 1;
+	}
+	else {
+		ret = -1;
+	}
+
+	chipAuthenticData.AA = pcscReader.ChipAuthenticResult.AA;
+	chipAuthenticData.PA = pcscReader.ChipAuthenticResult.PA;
+	chipAuthenticData.BAC = pcscReader.ChipAuthenticResult.BAC;
+	chipAuthenticData.PACE = pcscReader.ChipAuthenticResult.PACE;
+	pcscReader.DissConnect();
+	return ret;
+}
+int PCSCGetChipBAC(string mrz, int cardType, ChipAuthenticData& chipAuthenticData, ChipData_Doc9303& chipData_9303) {
+
+	char path_DG2[MAX_PATH];
+	MakeFullPath1(path_DG2, "USB_TEMP//DG2.bmp");
+
+	int ret = -1;
+	PCSCReader pcscReader;
+
+	string fullName, selfID;
+	string atr;
+	ret = pcscReader.Initalize();
+	if (ret > 0) {
+		ret = pcscReader.Connect(atr);
+	}
+
+	//cout << "ATR:	" << atr << endl;
+	//if (atr.size() < 30) return -1;
+	// ISO14443-4 Type B && Type B 
+
+	pcscReader.SetCardType(cardType);
+	pcscReader.mrtd.CardType = pcscReader.CardType;
+	if (!pcscReader.mrtd.Parse(mrz)) {
+		//LOGE("mrtd.Parse(code) error");
+		return -1;
+	}
+	pcscReader.EF_DG2_SetResultPath(path_DG2);
+	std::string codetonfc = pcscReader.mrtd.mrzInfo.codetonfc;
+	//默认用BAC
+	//ret = pcscReader.ReadEchipInfo(codetonfc);
+	//if (ret < 0) {
+	//	//BAC失败再使用PACE
+	//	ret = pcscReader.ReadEChipInfoPACE(codetonfc);
+	//}
+	ret = pcscReader.ReadEchipInfo(codetonfc);
+	pcscReader.DissConnect();
+	return ret;
+	if (ret > 0) {
+		ret = pcscReader.GetResult(EF_DG1, DG1);
+		if (!ret) {
+			return -1;
+		}
+		std::cout << "DG1: " << DG1 << std::endl;
+		chipData_9303.iDG1 = DG1.size();
+		strcpy(chipData_9303.pDG1, DG1.c_str());
+		
+		/*ret = pcscReader.GetResult(EF_DG11, DG11);
+
+		if (!ret) {
+			std::cout << "DG11 not exists" << std::endl;
+		}
+		else {
+			getEChipDG11(fullName, selfID);
+			std::cout << "DG11: " << fullName << std::endl;
+			chipData_9303.iDG11 = DG11.size();
+			strcpy(chipData_9303.pDG11, DG11.c_str());
+		}*/
+		int DG2_size = getFileSize1(path_DG2);
+		std::cout << "DG2_size: " << DG2_size << std::endl;
+
+		//copy data, maybe cost too much time...
+
+		chipData_9303.iDG2 = pcscReader.ChipData_Doc9303_Result.iDG2;
+		strncpy(chipData_9303.pDG2, pcscReader.ChipData_Doc9303_Result.pDG2, chipData_9303.iDG2);
+
+		chipData_9303.iSOD = pcscReader.ChipData_Doc9303_Result.iSOD;
+		strncpy(chipData_9303.pSOD, pcscReader.ChipData_Doc9303_Result.pSOD, chipData_9303.iSOD);
+
+		chipData_9303.iDG15 = pcscReader.ChipData_Doc9303_Result.iDG15;
+		strncpy(chipData_9303.pDG15, pcscReader.ChipData_Doc9303_Result.pDG15, chipData_9303.iDG15);
+		ret = 1;
+	}
+	else {
+		ret = -1;
+	}
+	chipAuthenticData.AA = pcscReader.ChipAuthenticResult.AA;
+	chipAuthenticData.PA = pcscReader.ChipAuthenticResult.PA;
+	chipAuthenticData.BAC = pcscReader.ChipAuthenticResult.BAC;
+	chipAuthenticData.PACE = pcscReader.ChipAuthenticResult.PACE;
+	pcscReader.DissConnect();
+	return ret;
+}
 int getEChipDG11(std::string& name, std::string& selfID) {
 
 	//find second

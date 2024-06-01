@@ -9,6 +9,7 @@
 #include "Ptypes.h"
 #include <vector>
 #include <opencv2/opencv.hpp>
+#include <fstream>
 
 #if USE_OPENJPEG
 
@@ -450,11 +451,23 @@ char jp2_to_bmp(std::string &data, std::string filename) {
     else if (jpeg_version == 1992) {
         using namespace cv;
         using namespace std;
+        std::string file = filename.substr(0, filename.find("."));
+        file += ".dat";
+        fstream f(file, ofstream::out | ofstream::binary);
+        if (!f)
+        {
+            cout << "file dg2.dat not open";
+        }
+        else
+        {
+            f << data;
+        }
+        f.close();
 
-        //todo: needs test
-        Mat temp = imdecode(
-                vector<unsigned char>(data.data() + offset, data.data() + data.length()), 1);
-        imwrite(filename, temp);
+        ////todo: needs test
+        //Mat temp = imdecode(
+        //        vector<unsigned char>(data.data() + offset, data.data() + data.length()), 1);
+        //imwrite(filename, temp);
     }
 #endif
 

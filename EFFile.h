@@ -1,4 +1,4 @@
-﻿/*
+/*
  * EFFile.h
  *
  *  Created on: Sep 16, 2018
@@ -15,30 +15,28 @@
 #include <vector>
 
 enum EF_NAME {
-    EF_UNKNOWN = -1,
-    EF_COM = 0,
-    EF_DG1 = 1,
-    EF_DG2 = 2,
-    EF_DG3 = 3,
-    EF_DG4 = 4,
-    EF_DG5 = 5,
-    EF_DG6 = 6,
-    EF_DG7 = 7,
-    EF_DG8 = 8,
-    EF_DG9 = 9,
-    EF_DG10 = 10,
-    EF_DG11 = 11,
-    EF_DG12 = 12,
-    EF_DG13 = 13,
-    EF_DG14 = 14,
-    EF_DG15 = 15,
-    EF_DG16 = 16,
-    EF_SOD = 17,
-    EF_IDINFO = 18,
-    EF_IDPIC = 19,
-    EF_CARDACCESS = 20,
-    EF_ATR_INFO = 21,
-    EF_CARDSECURITY = 22
+  EF_UNKNOWN = -1,
+  EF_COM = 0,
+  EF_DG1 = 1,
+  EF_DG2 = 2,
+  EF_DG3 = 3,
+  EF_DG4 = 4,
+  EF_DG5 = 5,
+  EF_DG6 = 6,
+  EF_DG7 = 7,
+  EF_DG8 = 8,
+  EF_DG9 = 9,
+  EF_DG10 = 10,
+  EF_DG11 = 11,
+  EF_DG12 = 12,
+  EF_DG13 = 13,
+  EF_DG14 = 14,
+  EF_DG15 = 15,
+  EF_DG16 = 16,
+  EF_SOD = 17,
+  EF_IDINFO = 18,
+  EF_IDPIC = 19,
+  EF_CardAccess = 20
 };
 
 class EFFile {
@@ -107,6 +105,14 @@ class EF_DG11_File : public EFFile {
  public:
   EF_DG11_File();
   virtual char FileParse(std::string &data);
+};
+
+class EF_CardAccess_File : public EFFile
+{
+public:
+    EF_CardAccess_File();
+
+    virtual char FileParse(__in std::string& data);
 };
 
 #endif /* EFFILE_H_ */

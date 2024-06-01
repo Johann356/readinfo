@@ -1,25 +1,25 @@
-ï»¿#pragma once
+#pragma once
 
 #define RF_RECV_IDCARD_INFO_LEN    0x100
 #define RF_RECV_IDCARD_PHOTO_LEN   0x400
 #define RF_RECV_IDCARD_INFO_POS1    0x04
-
+#define PCSCDLL extern"C" _declspec(dllexport)
 typedef struct tagIDCardInfor
 {
-	unsigned char name[30];				// å§“å
-	unsigned char sex[2];				// æ€§åˆ«
-	unsigned char nation[4];			// æ°‘æ—
-	unsigned char birthday[16];			// å‡ºç”Ÿæ—¥æœŸ YYYYMMDD
-	unsigned char addr[70];				// åœ°å€
-	unsigned char IDSn[36];				// èº«ä»½è¯å·
-	unsigned char signOrg[30];			// ç­¾å‘å•ä½
-	unsigned char startDate[16];		// ç­¾å‘æ—¥æœŸ
-	unsigned char endDate[16];			// æœ‰æ•ˆæ—¥æœŸ
-	unsigned char passID[18];			// é€šè¡Œè¯å·ç 
-	unsigned char issuesNum[4];			// ç­¾å‘æ¬¡æ•°
-	unsigned char rfuData1[6];			// é¢„ç•™åŒºåŸŸ
-	unsigned char typeFlag[2];			// è¯ä»¶ç±»å‹æ ‡è¯†
-	unsigned char rfuData2[6];			// é¢„ç•™åŒºåŸŸ
+	unsigned char name[30];				// ĞÕÃû
+	unsigned char sex[2];				// ĞÔ±ğ
+	unsigned char nation[4];			// Ãñ×å
+	unsigned char birthday[16];			// ³öÉúÈÕÆÚ YYYYMMDD
+	unsigned char addr[70];				// µØÖ·
+	unsigned char IDSn[36];				// Éí·İÖ¤ºÅ
+	unsigned char signOrg[30];			// Ç©·¢µ¥Î»
+	unsigned char startDate[16];		// Ç©·¢ÈÕÆÚ
+	unsigned char endDate[16];			// ÓĞĞ§ÈÕÆÚ
+	unsigned char passID[18];			// Í¨ĞĞÖ¤ºÅÂë
+	unsigned char issuesNum[4];			// Ç©·¢´ÎÊı
+	unsigned char rfuData1[6];			// Ô¤ÁôÇøÓò
+	unsigned char typeFlag[2];			// Ö¤¼şÀàĞÍ±êÊ¶
+	unsigned char rfuData2[6];			// Ô¤ÁôÇøÓò
 } t_idcardinfor;
 
 typedef struct ChipAuthenticData
@@ -71,11 +71,15 @@ typedef struct ChipData_Doc9303
 	int iDG14;
 	int iDG15;
 	int iDG16;
-	int iSod;
+	int iSOD;
 	int iCardAcess;
 	int iCardSecurity;
 } ChipData_Doc9303_Result;
-
+PCSCDLL int PCSCGetChip_given_three_parts_PACE(std::string serialnum, std::string birthdate, std::string expiredate, int cardType, ChipAuthenticData& chipAuthenticData, ChipData_Doc9303& chipData_9303);
+PCSCDLL int PCSCGetChip_given_three_parts_BAC(std::string serialnum, std::string birthdate, std::string expiredate, int cardType, ChipAuthenticData& chipAuthenticData, ChipData_Doc9303& chipData_9303);
+PCSCDLL int PCSCGetChipBAC(std::string mrz, int cardType, ChipAuthenticData& chipAuthenticData, ChipData_Doc9303& chipData_9303);
+PCSCDLL int PCSCGetChipPACE(std::string mrz, int cardType, ChipAuthenticData& chipAuthenticData, ChipData_Doc9303& chipData_9303);
+int PCSCGecChipAA();
 int PCSCGetChip(std::string& mrz, int cardType, ChipAuthenticData& chipAuthenticData, ChipData_Doc9303& chipData_9303);
 int getEChipDG11(std::string& name, std::string& selfID);
 int PCSC_GetIDCard();

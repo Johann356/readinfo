@@ -1,4 +1,4 @@
-﻿//#include <iostream>
+//#include <iostream>
 #include <string>
 #include <map>
 #include <vector>
@@ -123,6 +123,26 @@ char EF_DG2_File::FileParse(std::string &data) {
     return true;
 //#endif
 }
+
+//CardAccess
+EF_CardAccess_File::EF_CardAccess_File() {
+    this->Tag = 0;
+    //this->Id.assign("\x01\x02",2);
+    //this->name.assign("EF_DG2",sizeof("EF_DG2"));
+    this->Id[0] = 0x01;
+    this->Id[1] = 0x1C;
+    this->Id[2] = 0;
+    memcpy(this->name, "EF_CardAccess", sizeof("EF_CardAccess"));
+    this->Index = EF_CardAccess;
+    this->name[sizeof("EF.DG2")] = '\0';
+}
+
+char EF_CardAccess_File::FileParse(__in std::string& data) {
+
+    result["EF_CardAccess"] = data;
+    return true;
+}
+
 
 
 

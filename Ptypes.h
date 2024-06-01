@@ -1,4 +1,4 @@
-ï»¿/*
+/*
  * Ptypes.h
  *
  *  Created on: Sep 11, 2018
@@ -45,9 +45,9 @@
 #define CHECK_OK(x)  if(!(x)) return false;
 #define KLEN 16
 
-// å†…å­˜å¯¹é½
+// ÄÚ´æ¶ÔÆë
 #define MEM_ALIGN(n, align) ((n + align - 1) & (~(align - 1)))
-// DESç®—æ³•å¯¹é½
+// DESËã·¨¶ÔÆë
 #define DES_ALIGN(n, align) ((n + align) & (~(align - 1)))
 
 #define CARD_TYEP_ID       4
@@ -55,12 +55,12 @@
 #define CARD_TYPE_TWO       2
 #define CARD_TYPE_THREE    3
 
-#define CONTROL_RW_TIMEOUT_MS 100  //ç­‰å¾…æ—¶é—´
+#define CONTROL_RW_TIMEOUT_MS 100  //µÈ´ıÊ±¼ä
 
 #define DG2_FILE_NAME        "USB_TEMP/DG2.bmp"
 #define DG1_FILE_NAME    "USB_TEMP/ChipMRZ.txt"
 
-//linux ç‰ˆæœ¬çš„ä¸æ”¯æŒ
+//linux °æ±¾µÄ²»Ö§³Ö
 #define IDINFO_FILE_NAME    "USB_TEMP/IDCardInfo.txt"
 #define IDPIC_FILE_NAME     "USB_TEMP/id.bmp"
 
@@ -72,5 +72,5 @@ extern unsigned short  HostToNetworkUINT16(unsigned short n);
 extern void int2char(std::string& input, int startPos, int endPos);
 extern void char2int(std::string& input, int startPos, int endPos);
 extern std::string ws2s1(const wchar_t* pw);
-
+std::string HexStringToBinary(const std::string & src);
 #endif /* PTYPES_H_ */
