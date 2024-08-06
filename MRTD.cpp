@@ -47,7 +47,7 @@ static bool PassportCheck(std::string number, char checkBit) {
 static bool mrtCpy(char *dest, const char *src, int startPos, int len) {
 
     if (strlen(src) < startPos + len) {
-        //std::cout << "mrtCpy len error" << std::endl;
+        //LOG(INFO)<< "mrtCpy len error" << std::endl;
         return false;
     }
 
@@ -63,7 +63,7 @@ bool mrtParseName(char *FirstName, char *LastName, const char *src, int startPos
     int i = startPos;
 
     if (strlen(src) < srcLen) {
-        //std::cout << "mrtParseName len error" << std::endl;
+        //LOG(INFO)<< "mrtParseName len error" << std::endl;
         return false;
     }
 
@@ -121,9 +121,9 @@ char Public_ParseThreeCard(std::string &str, struct MrzInfoStruct *mrzInfo) {
         //LOGD("location3 == %d\n", splitstr[2].length());
         return false;
     }
-    //std::cout << "splitstr[0]: " << splitstr[0] << std::endl;
-    //std::cout << "splitstr[1]: " << splitstr[1] << std::endl;
-    //std::cout << "splitstr[2]: " << splitstr[2] << std::endl;
+    //LOG(INFO)<< "splitstr[0]: " << splitstr[0] << std::endl;
+    //LOG(INFO)<< "splitstr[1]: " << splitstr[1] << std::endl;
+    //LOG(INFO)<< "splitstr[2]: " << splitstr[2] << std::endl;
 
     //保存识别的MRZ到code中
     str = splitstr[0] + std::string("\r\n") + splitstr[1] + std::string("\r\n") + splitstr[2];

@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Ptypes.cpp
  *
  *  Created on: Sep 11, 2018
@@ -6,7 +6,6 @@
  */
 
  //#include <iostream>
-# define _CRT_SECURE_NO_WARNINGS
 #include "Ptypes.h"
 #include <string>
 #include <stdlib.h>
@@ -19,13 +18,13 @@
 //
 //    char current_absolute_path[MAX_SIZE];
 //    memset(current_absolute_path, 0, MAX_SIZE);
-//    //»ñÈ¡µ±Ç°³ÌĞò¾ø¶ÔÂ·¾¶
+//    //è·å–å½“å‰ç¨‹åºç»å¯¹è·¯å¾„
 //    int cnt = readlink("/proc/self/exe", current_absolute_path, MAX_SIZE);
 //    if (cnt < 0 || cnt >= MAX_SIZE) {
 //        LOGD("***Error***\n");
 //        return (-1);
 //    }
-//    //»ñÈ¡µ±Ç°Ä¿Â¼¾ø¶ÔÂ·¾¶£¬¼´È¥µô³ÌĞòÃû
+//    //è·å–å½“å‰ç›®å½•ç»å¯¹è·¯å¾„ï¼Œå³å»æ‰ç¨‹åºå
 //    int i;
 //    for (i = cnt; i >= 0; --i) {
 //        if (current_absolute_path[i] == '/') {
@@ -34,7 +33,7 @@
 //        }
 //    }
 //
-//    //´´½¨µ±Ç°Â·¾¶
+//    //åˆ›å»ºå½“å‰è·¯å¾„
 //    int len = strlen(current_absolute_path);
 //    for (int i = 0; path[i] != '\0'; i++) {
 //        current_absolute_path[i + len] = path[i];
@@ -84,7 +83,7 @@ std::string HexStringToBinary(const std::string& src) {
     return dest;
 }
 
-// ±¾µØºÍÍøÂç×Ö½Ú(BigEndian)Ë³Ğò×ª»»
+// æœ¬åœ°å’Œç½‘ç»œå­—èŠ‚(BigEndian)é¡ºåºè½¬æ¢
 unsigned short HostToNetworkUINT16(unsigned short n) {
     int k = 1;
     if (*((char*)&k)) {

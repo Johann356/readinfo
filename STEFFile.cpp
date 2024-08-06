@@ -14,7 +14,7 @@
 
 #if USE_OPENJPEG
 
-#include <openjpeg.h>
+#include <openjpeg-2.2\openjpeg.h>
 #include "JP2.h"
 
 #endif
@@ -344,6 +344,23 @@ void EF_CARDACCESS_File_Init(STEFFile* file) {
     file->Valid = NULL;
 }
 
+void EF_CARDSECURITY_File_Init(STEFFile* file) {
+    file->Tag = 0;
+    file->Index = EF_CARDSECURITY;
+    file->Id[0] = 0x01;
+    file->Id[1] = 0x1D;
+    file->Id[2] = '\0';
+    memcpy(file->name, "EF_CardSecurity", sizeof("EF_CardSecurity"));
+    file->name[sizeof("EF_CardSecurity")] = '\0';
+
+    file->resultLen = 0;
+    file->result[0] = '\0';
+    file->resultPath[0] = '\0';
+
+    file->FileParse = NULL;
+    file->Valid = NULL;
+}
+
 void EF_IDINFO_File_Init(STEFFile *file) {
     file->Tag = 0;
     file->Index = EF_IDINFO;
@@ -396,11 +413,12 @@ void STEFilesInit(STEFFileSystem *fileSystem) {
     EF_IDINFO_File_Init(&(fileSystem->stEFFiles[18]));
     EF_IDPIC_File_Init(&(fileSystem->stEFFiles[19]));
     EF_CARDACCESS_File_Init(&(fileSystem->stEFFiles[20]));
-    fileSystem->count = 21;
+    EF_CARDSECURITY_File_Init(&(fileSystem->stEFFiles[21]));
+    fileSystem->count = 22;
 
-    for (int i = 21; i < MAX_ST_EFFILE; i++) {
+    /*for (int i = 21; i < MAX_ST_EFFILE; i++) {
         EF_Default_File_Init(&(fileSystem->stEFFiles[i]));
-    }
+    }*/
 }
 
 STEFFile *StIndexFindEFFile(EF_NAME name, STEFFileSystem *fileSystem) {

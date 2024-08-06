@@ -23,7 +23,7 @@ typedef struct STEFFile {
   EF_NAME Index;
   int resultLen;
   char Id[3];
-  char name[10];
+  char name[20];
   char result[1024 + 1];
   char resultPath[1024 + 1];
   char (*FileParse)(std::string &data, STEFFileSystem *fileSystem);
@@ -34,6 +34,8 @@ typedef struct STEFFile {
 typedef struct STEFFileSystem {
 
   STEFFile stEFFiles[MAX_ST_EFFILE];
+  std::string DS;
+  int iDS;
   //std::map<std::string , std::string> result;
   int count;
 

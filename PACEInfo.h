@@ -21,6 +21,7 @@
 
 class PACEInfo {
 public:
+	PACEInfo();
 	PACEInfo(std::string oid, int version, int parameterId);
 	std::string getOID();
 	std::string getOIDString();

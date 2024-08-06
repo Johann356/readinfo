@@ -1,6 +1,7 @@
 #pragma once
 #include<string>
 #include<atlstr.h>
+#include <unordered_map>
 #include <openssl/des.h>
 #include <openssl/aes.h>
 #include <openssl/evp.h>
@@ -9,9 +10,13 @@
 #include "STEFFile.h"
 #include "EFFile.h"
 #include "MRTD.h"
-#define EF_CARDACCESS_FILENAME	    "USB_TEMP\\EF_CardAccess.dat"
-#define EF_COM_FILENAME	    "USB_TEMP\\EF_COM.dat"
-#define EF_SOD_FILENAME	    "USB_TEMP\\EF_SOD.dat"
+#include "ImageFormat.h"
+#include <nlohmann/json.hpp>
+#include "CAInfo.h"
+using json = nlohmann::json;
+#define EF_CARDACCESS_FILENAME	    "USB_TEMP\\EF_CardAccess.bin"
+#define EF_COM_FILENAME	    "USB_TEMP\\COM.bin"
+#define EF_SOD_FILENAME	    "USB_TEMP\\SOD.bin"
 
 using namespace std;
 std::string BYTE2string(byte* bByte, UINT iLength);
@@ -76,6 +81,10 @@ public:
 		int iCardAcess;
 		int iCardSecurity;
 	} ChipData_Doc9303_Result;
+	imageDetail DG2Details,DG7Details;
+	char OnTimeDetectionChips, AppStatus, BAC, PACE, AA, PA, CA, SODCheck, IntegrityCheck, DSCCheck, IssuingCountryCheck, DSCDateCheck;
+	std::string COM, SOD, DSC, DG1, DG1detail, DG2, DG3, DG4, DG5, DG6, DG7, DG8, DG9, DG10, DG11, DG12, DG13, DG14, DG15, DG16;
+	std::string rfid_json;
 public:
 	PCSCReader();
 	~PCSCReader();
@@ -83,15 +92,50 @@ public:
 		this->CardType = type;
 		return true;
 	}
-	//³õÊ¼»¯¶Á¿¨Æ÷
+	void InitalizeState();
+	//åˆå§‹åŒ–è¯»å¡å™¨
 	int Initalize();
-	//Á¬½Ó¶Á¿¨Æ÷
+	//è¿æ¥è¯»å¡å™¨
 	int Connect(string& atr );
-	//·¢ËÍapduÃüÁî
+	//å‘é€apduå‘½ä»¤
 	int Apdusend(string& sendData, BYTE* RecvBuff, DWORD& RecvLen);
-	//»ñÈ¡¸´Î»ĞÅÏ¢
+	//è·å–å¤ä½ä¿¡æ¯
 	int Getatr(string& atr);
 	int DissConnect();
+	bool ReadCardAccessAndCardSecurity(std::string& CardAccess,std::string& CardSecurity);
+	bool ChipAuthentication(std::string& CardSecurity,
+		std::string& cipherAlgorithm,
+		int keyLength,
+		std::string SSC,
+		const std::string& KSenc,
+		const std::string& KSmac,
+		std::string& newKSenc,
+		std::string& newKSmac,
+		int& newKeyLength,
+		std::string& newCipherAlgorithm);
+	bool SendAnotherRandomNumber(std::string& T_ICC, int keyLength);
+	bool PseudoRandomNumberMapping(std::string& S_ICC, std::string& T_ICC, int keyLength, std::string& cipherAlgorithm, BIGNUM* p, BIGNUM*& mappingResult);
+	bool NumberToECPointMapping(EC_GROUP*& ec_group,BIGNUM*& x_bn,EC_POINT*& G_hat);
+	bool NumberToNumberMapping(BIGNUM* x_bn, BIGNUM* p, BIGNUM* q, BIGNUM*& mappingResult);
+	bool GetCAPKIC(std::string& PKIC, std::string& dg14, int id);
+	bool GetCAKA(EC_GROUP*& ec_group, EC_POINT*& shared_secrete, std::string& KA_X, std::string& SKmap, std::string& PKIC);
+	bool GetCAKA(DH*& dh, BIGNUM*& shared_secrete, std::string& KA, std::string& SKmap, std::string& PKIC);
+	bool CAGeneralAuthenticate(std::vector<CAInfo>& cainfo,
+		std::string& cipherAlgorithm,
+		int keyLength,
+		std::string SSC,
+		const std::string& KSenc,
+		const std::string& KSmac,
+		std::string& PKIFD);
+	bool ComputeCAPK(std::vector<CAInfo>& cainfo, std::string& SKmap, std::string& PKmap, EC_GROUP*& ec_group);
+	bool ComputeCAPK(std::vector<CAInfo>& cainfo, std::string& SKmap, std::string& PKmap, DH*& dh);
+	bool SELECTCA(std::vector<CAInfo>& cainfo,
+		std::string& cipherAlgorithm,
+		int keyLength,
+		std::string SSC,
+		const std::string& KSenc,
+		const std::string& KSmac);
+	bool GetCAPK(std::vector<CAInfo>& CAinfo, std::string& CardSecurity);
 	char BuildKencAndKmac(const std::string& mrzInfo,
 		std::string& Kenc,
 		std::string& Kmac);
@@ -106,9 +150,14 @@ public:
 		std::string& KSenc,
 		std::string& KSmac);
 
-	char ActiveAuthentication(char* DG15_file_path);
+	char ActiveAuthentication(char* DG15_file_path,
+		const std::string& KSenc,
+		const std::string& KSmac,
+		std::string& SSC,
+		std::string& cipherAlgorithm,
+		int keyLength);
 
-	char PassiveAuthentication(char* SOD_file_path);
+	char PassiveAuthentication(char* SOD_file_path, std::unordered_map<int, std::string>& DGs);
 
 	char BuildSSC(std::string& RND_IFD,
 		std::string& RND_ICC,
@@ -126,8 +175,8 @@ public:
 		int keyLength,
 		const std::string& cipherAlgorithm);
 	/**
- * ÏÂÃæÕâÒ»ÏµÁĞ½Ó¿ÚÊ±ÎªÁËÔö¼ÓÒ»Ğ©»¤ÕÕµÄÖ§³Ö£¬ÕâÀà»¤ÕÕÃ»ÓĞ°²È«¼ÓÃÜ£¬²»ĞèÒª¸ù¾İ»ú¶ÁÂë½¨Á¢°²È«Í¨ĞÅ
- * Ö±½ÓÍ¨¹ıAPDUÃüÁî¶ÁÈ¡Ğ¾Æ¬
+ * ä¸‹é¢è¿™ä¸€ç³»åˆ—æ¥å£æ—¶ä¸ºäº†å¢åŠ ä¸€äº›æŠ¤ç…§çš„æ”¯æŒï¼Œè¿™ç±»æŠ¤ç…§æ²¡æœ‰å®‰å…¨åŠ å¯†ï¼Œä¸éœ€è¦æ ¹æ®æœºè¯»ç å»ºç«‹å®‰å…¨é€šä¿¡
+ * ç›´æ¥é€šè¿‡APDUå‘½ä»¤è¯»å–èŠ¯ç‰‡
  */
 	char DirectReadEF(
 		EF_NAME name,
@@ -184,10 +233,17 @@ public:
 
 	char ReadEchipInfo(std::string& codetonfc);
 	BOOL ReadEChipInfoPACE(std::string& codetonfc);
-	BOOL SelectPACE(std::string& oid);
+	BOOL SelectPACE(std::string& oid, bool byCAN);
 	BOOL ICCRequestRandomNumberPACE(__out std::string& Z_ICC);
 	char PostPassportCommand(std::string& request, std::string& response);
-
+	char SecureCommunicationInternalAuthenticate(const std::string& KSenc,
+		const std::string& KSmac,
+		std::string& SSC,
+		std::string& data,
+		std::string& RND_IFD,
+		std::string& cipherAlgorithm,
+		int keyLength,
+		bool longCommand);
 	BOOL BuildKpai(
 		__in const std::string& mrzInfo,
 		__out std::string& Kpai,
@@ -206,15 +262,15 @@ public:
 
 	BOOL BuildMapKey(std::string& PKmap, std::string& SKmap, int ecc_id);
 
-	BOOL RandomNumberMap(std::string& PKmap_IC, const std::string& PKmap, const std::string& SKmap);
+	BOOL RandomNumberMap(std::string& PKmap_IC, const std::string& PKmap, const std::string& SKmap, bool isECDH);
 
 	BOOL MutualAuthenticate(EC_POINT* G_hat, std::string& PKDH_IC, std::string& SKDH_IFD, std::string& PKDH_IFD, int ecc_id);
 
 	BOOL MutualAuthenticate(BIGNUM*& G_hat, std::string& PKDH_IC, std::string& SKDH_IFD, std::string& PKDH_IFD, BIGNUM*& prime);
 
-	BOOL ExchangeT(std::string& TIFD, std::string& TICC_my);
+	BOOL ExchangeT(std::string& TIFD, std::string& TICC_my, std::string& RAPDU);
 
-	void ChipReaderReadFileResultOperate(EF_NAME name, char* result, unsigned char type, int length);
+	void ChipReaderReadFileResultOperate(EF_NAME name, std::string& result, unsigned char type, int length);
 
 	char GetResult(EF_NAME efName, string& retData);
 
@@ -258,11 +314,11 @@ public:
 	int Buildsecp256r1(EC_GROUP*& ec_group);
 	int BuildGFP(DH*& dh,int id);
 	std::string baseFolder;
-
+	void dumpJsonResult();
 private:
-	//¶Á¿¨Æ÷Ãû³Æ
+	//è¯»å¡å™¨åç§°
 	CString ReaderName;
-	//ÓëÖÇÄÜ¿¨Á¬½ÓµÄ¾ä±ú
+	//ä¸æ™ºèƒ½å¡è¿æ¥çš„å¥æŸ„
 	SCARDHANDLE	hCard;
 	DWORD m_dAttrib;
 	SCARDCONTEXT hContext;

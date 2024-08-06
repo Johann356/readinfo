@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Ptypes.h
  *
  *  Created on: Sep 11, 2018
@@ -15,7 +15,7 @@
 #include <algorithm>
 #include <string>
 #include <string.h>
-
+#include "glog\logging.h"
 //#ifndef char
 //#define char    bool
 //#define unsigned char    unsigned char
@@ -45,9 +45,9 @@
 #define CHECK_OK(x)  if(!(x)) return false;
 #define KLEN 16
 
-// ÄÚ´æ¶ÔÆë
+// å†…å­˜å¯¹é½
 #define MEM_ALIGN(n, align) ((n + align - 1) & (~(align - 1)))
-// DESËã·¨¶ÔÆë
+// DESç®—æ³•å¯¹é½
 #define DES_ALIGN(n, align) ((n + align) & (~(align - 1)))
 
 #define CARD_TYEP_ID       4
@@ -55,14 +55,15 @@
 #define CARD_TYPE_TWO       2
 #define CARD_TYPE_THREE    3
 
-#define CONTROL_RW_TIMEOUT_MS 100  //µÈ´ıÊ±¼ä
+#define CONTROL_RW_TIMEOUT_MS 100  //ç­‰å¾…æ—¶é—´
 
 #define DG2_FILE_NAME        "USB_TEMP/DG2.bmp"
 #define DG1_FILE_NAME    "USB_TEMP/ChipMRZ.txt"
 
-//linux °æ±¾µÄ²»Ö§³Ö
+//linux ç‰ˆæœ¬çš„ä¸æ”¯æŒ
 #define IDINFO_FILE_NAME    "USB_TEMP/IDCardInfo.txt"
 #define IDPIC_FILE_NAME     "USB_TEMP/id.bmp"
+
 
 extern int MakeFullPath(char* fullpath, const char* path);
 extern std::string ws2s(const std::wstring& ws);

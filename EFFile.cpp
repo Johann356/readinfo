@@ -6,7 +6,7 @@
 #include "EFFile.h"
 
 #if USE_OPENJPEG
-#include <openjpeg.h>
+#include <openjpeg-2.2\openjpeg.h>
 #include "JP2.h"
 #endif
 
@@ -93,7 +93,7 @@ char EF_DG1_File::FileParse(std::string &data) {
 
     std::string mrz = data.substr(it + 3);
 //#if USE_LOG_LEVEL1
-//    std::cout << "EF_DG1_File::FileParse: " << mrz << std::endl;
+//    LOG(INFO)<< "EF_DG1_File::FileParse: " << mrz << std::endl;
 //#endif
     return true;
 }
