@@ -44,8 +44,8 @@ std::string sha512(const std::string& input);
 bool compare_ignore_case(std::string& str1, std::string& str2);
 void get_shared_secret(EC_GROUP* ec, std::string private_key_ifd, std::string public_key_chip, EC_POINT*& shared_secret);
 void get_shared_secret(DH*& dh, std::string private_key_ifd, std::string public_key_chip, BIGNUM*& shared_secret);
-void get_G_hat(EC_GROUP* ec, EC_POINT* H, std::string s_str, const EC_POINT* G, EC_POINT* G_hat);
-void get_G_hat(DH*& dh, BIGNUM*& H, std::string s_str, const BIGNUM*& G, BIGNUM*& G_hat);
+void get_G_hat(EC_GROUP*& ec, EC_POINT*& H, std::string& s_str, const EC_POINT*& G, EC_POINT*& G_hat);
+void get_G_hat(DH*& dh, BIGNUM*& H, std::string& s_str, const BIGNUM*& G, BIGNUM*& G_hat);
 //gai le
 void computeTIFD(std::string& KSmac, std::string& PKDH_ICC, std::string& oid, int keyLength, std::string& cipherAlgorithm, std::string& TIFD, int ecc_id);
 void string2binary(std::string str, unsigned char* arr, int arr_len);
@@ -73,6 +73,7 @@ bool SHA_X(std::string& sha_name, std::string& binaryInput, std::string& output)
 bool checkDGs(std::unordered_map<int, std::string>& DGs, std::string& hash_type, std::string& sod, bool& integrity);
 bool checkCSCA(std::string& sod, std::string& cipherFlag, std::string& hashFlag, int hashLength, std::string& country);
 void aes_cbc_decode(const std::string& key, std::string& inputdata, std::string& dec, std::string& iv_str, int keyLength);
+void aes_cbc_encode(const std::string& key, std::string& inputdata, std::string& enc, std::string& iv_str, int keyLength);
 std::string hexToChar(std::string& hexstring);
 std::string int2Hex(int val);
 std::string lengthtoBinary(int length);

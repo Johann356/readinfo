@@ -343,6 +343,22 @@ void EF_CARDACCESS_File_Init(STEFFile* file) {
     file->FileParse = NULL;
     file->Valid = NULL;
 }
+void EF_ART_INFO_File_Init(STEFFile* file) {
+    file->Tag = 0;
+    file->Index = EF_ATR_INFO;
+    file->Id[0] = 0x2f;
+    file->Id[1] = 0x01;
+    file->Id[2] = '\0';
+    memcpy(file->name, "EF_ART_INFO", sizeof("EF_ART_INFO"));
+    file->name[sizeof("EF_ART_INFO")] = '\0';
+
+    file->resultLen = 0;
+    file->result[0] = '\0';
+    file->resultPath[0] = '\0';
+
+    file->FileParse = NULL;
+    file->Valid = NULL;
+}
 
 void EF_CARDSECURITY_File_Init(STEFFile* file) {
     file->Tag = 0;
@@ -413,8 +429,9 @@ void STEFilesInit(STEFFileSystem *fileSystem) {
     EF_IDINFO_File_Init(&(fileSystem->stEFFiles[18]));
     EF_IDPIC_File_Init(&(fileSystem->stEFFiles[19]));
     EF_CARDACCESS_File_Init(&(fileSystem->stEFFiles[20]));
-    EF_CARDSECURITY_File_Init(&(fileSystem->stEFFiles[21]));
-    fileSystem->count = 22;
+    EF_ART_INFO_File_Init(&(fileSystem->stEFFiles[21]));
+    EF_CARDSECURITY_File_Init(&(fileSystem->stEFFiles[22]));
+    fileSystem->count = 23;
 
     /*for (int i = 21; i < MAX_ST_EFFILE; i++) {
         EF_Default_File_Init(&(fileSystem->stEFFiles[i]));

@@ -158,7 +158,7 @@ char BuildKencAndKmac(const std::string& mrzInfo,
 
 
 
-int main1() {
+int main() {
 
 	//int res = passive_auth();
 	//change char_set to utf-8
@@ -179,22 +179,22 @@ int main1() {
 	ChipAuthenticData chipAuthenticData{};
 	ChipData_Doc9303 chip_data_9303{};
 	//int ret = PCSCGetChipBAC(mrz, 2, chipAuthenticData, chip_data_9303);
-	//char no[40];
-	//char birthdate[40];
-	//char expiredate[40];
+	//char mrz1[60];
+	//char mrz2[60];
 	//memset(no, 0, sizeof(no));
 	//memset(birthdate, 0, sizeof(no));
 	//memset(expiredate, 0, sizeof(no));
-	//ifstream infile("PACE.txt", ios::in);
+	char mypath[256];
+	//MakeFullPath1(mypath, "PACE.txt");
+	//ifstream infile(mypath, ios::in);
 	//if (!infile)
 	//{
-	//	LOG(INFO)<< "fail to open" << endl;
+	//	LOG(INFO) << "fail to open" << endl;
 	//}
 	//else
 	//{
-	//	infile.getline(no, 40);
-	//	infile.getline(birthdate, 40);
-	//	infile.getline(expiredate, 40);
+	//	infile.getline(mrz1, 60);
+	//	infile.getline(mrz2, 60);
 	//}
 	//char buff[100];
 	//_getcwd(buff, 100);
@@ -212,7 +212,18 @@ int main1() {
 	// 
 	// string mrz = "POCHNLEI<<CHENGXIANG<<<<<<<<<<<<<<<<<<<<<<<<\nEJ35846483CHN9710212M3301122MANHLDMMMPOIA962";
 	//string mrz = "POCHNLIN<<ZERONG<<<<<<<<<<<<<<<<<<<<<<<<<<<<\nEG60278610CHN0012142M2906173MBNGNEPDMINJA050";
-	string mrz = "P<TURORNEK<<ZEYNEP<<<<<<<<<<<<<<<<<<<<<<<<<<\nU200417972TUR9204029F280402812345678902<<<30";
+	LogOpen();
+	//string mrz = "P<TURORNEK<<ZEYNEP<<<<<<<<<<<<<<<<<<<<<<<<<<\nU200417972TUR9204029F280402812345678902<<<30";
+	
+	MakeFullPath1(mypath, "USB_TEMP");
+	RemoveDir(mypath);
+	/*string mrz = "";
+	mrz +=(mrz1);
+	mrz += "\n";
+	mrz +=(mrz2);
+	mrz += "\0";*/
+	//string mrz = "PDD<<MUSTERMANN<<ERIKA<<<<<<<<<<<<<<<<<<<<<<\nC01Y0Y1GV3D<<6408125F2702283<<<<<<<<<<<<<<<4";
+	string mrz = "PDAUSCITIZEN<<JANE<<<<<<<<<<<<<<<<<<<<<<<<<<\nRD01178861AUS9105045F3206098<99999000T<<<<88";
 	//std::string mrz = "P<SAUALHARBI<<JALAL<IBRAHIM<M<<<<<<<<<<<<<<<\nAE39833<<6SAU0406233M2801245<<<<<<<<<<<<<<02";
 	//string mrz = "POCHNDU<<SHUANG<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\nE167664651CHN9004229M2405182LGMFMLKM<<<<A922";
 	//string mrz = "P<THATANTICHANCHAIKUN<<MINGKEEREE<<<<<<<<<<<\nS797771<<OTHA8607210M13081835102500012778<66";
@@ -241,22 +252,31 @@ int main1() {
 	int ret = -1;
 	std::string mrzstr = mrz;
 	std::string rfid;
+	LOG(INFO) << "MRZ " << mrzstr;
 	//ret = PCSCGetChipPACE(mrzstr, 2, chipAuthenticData, chip_data_9303,rfid,false);
 	steady_clock::time_point start = steady_clock::now();
-	//ret = PCSCGetChipPACE(mrzstr, 2, chipAuthenticData, chip_data_9303,rfid,false);
-	//ret = PCSCGetChipBAC(mrzstr, 2, chipAuthenticData, chip_data_9303, rfid);
-	PCSC_GetIDCard();
+	ret = PCSCGetChipPACE(mrzstr, 2, chipAuthenticData, chip_data_9303,rfid,false);
+	
+	//PCSC_GetIDCard();
 	steady_clock::time_point last = steady_clock::now();
 	auto dt = last - start;
 	auto duration_seconds = std::chrono::duration_cast<std::chrono::seconds>(dt);
 	std::chrono::duration<double> duration_double = dt;
-	LOG(INFO)<< "read chip cost: " << duration_double.count() << " seconds" << std::endl;
+	LOG(INFO)<< "read chip PACE cost: " << duration_double.count() << " seconds" << std::endl;
+	RemoveDir(mypath);
+	start = steady_clock::now();
+	ret = PCSCGetChipBAC(mrzstr, 2, chipAuthenticData, chip_data_9303, rfid);
+	last = steady_clock::now();
+	dt = last - start;
+	duration_seconds = std::chrono::duration_cast<std::chrono::seconds>(dt);
+	duration_double = dt;
+	LOG(INFO) << "read chip BAC cost: " << duration_double.count() << " seconds" << std::endl;
 	LOG(INFO)<< "DG1.size: " << chip_data_9303.iDG1 << " DG2.size: " << chip_data_9303.iDG2 << " DG11.size: " << chip_data_9303.iDG11 << endl;
 	//int ret = passive_auth();
 	system("pause");
 	return 0;
 }
-int main()
+int main1()
 {
 	LogOpen();
 	testECDHIM();

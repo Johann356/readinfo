@@ -22,7 +22,9 @@
 class PACEInfo {
 public:
 	PACEInfo();
-	PACEInfo(std::string oid, int version, int parameterId);
+	PACEInfo(std::string oid, int version, int parameterId, std::string oid_origion);
+	char getParameterId();
+	std::string getOIDorigion();
 	std::string getOID();
 	std::string getOIDString();
 	std::string toMappingType(std::string& oid);
@@ -35,7 +37,7 @@ private:
 	std::string oid;
 	int version;
 	int ParameterId;
-
+	std::string oid_origion;
 public:
 	
 };

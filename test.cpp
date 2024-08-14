@@ -563,23 +563,7 @@ int testJP2(std::string& data, std::string filename, int& width, int& height, in
 	ret = 1;
 	return true;
 }
-void aes_cbc_encode1(const std::string& key, std::string& data, std::string& enc, std::string& iv_str) {
 
-	unsigned char iv[AES_BLOCK_SIZE] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-	for (int i = 0; i < 16; ++i) {
-		iv[i] = iv_str[i];
-	}
-
-	AES_KEY aes_key;
-	if (AES_set_encrypt_key((const unsigned char*)key.c_str(), key.length() * 8, &aes_key) < 0)
-	{
-		return;
-	}
-	unsigned char out[AES_BLOCK_SIZE];
-	unsigned char* inData = (unsigned char*)data.data();
-	AES_cbc_encrypt(inData, out, AES_BLOCK_SIZE, &aes_key, iv, AES_ENCRYPT);
-	enc = std::string((const char*)out, AES_BLOCK_SIZE);
-}
 void testIM()
 {
 	int keyLength = 128;
@@ -644,7 +628,7 @@ void testIM()
 	//	c1 = key1_check + key2_check;
 	//}
 	if (cipherAlgorithm == "AES")
-		aes_cbc_encode1(T_ICC, S_ICC, ki, iv_aes);//AES获得ki
+		aes_cbc_encode(T_ICC, S_ICC, ki, iv_aes,keyLength);//AES获得ki
 	//else if (cipherAlgorithm == "DESede")
 	//{
 	//	std::string key1 = S_ICC.substr(0, 8);
@@ -663,7 +647,7 @@ void testIM()
 		//if (keyLength == 192)
 		//	AesAddPaddingBytes(ki);//192AES填充
 		if (cipherAlgorithm == "AES")
-			aes_cbc_encode1(ki, c1, xi, iv_aes);//获得xi
+			aes_cbc_encode(ki, c1, xi, iv_aes,keyLength);//获得xi
 		//else if (cipherAlgorithm == "DESede")
 		//	KencTDES(ki, c1, xi, DES_ENCRYPT);//获得xi
 		xi = BinaryToHexString(xi);
@@ -671,8 +655,8 @@ void testIM()
 			xi.pop_back();
 		x = x + xi;//连接xi
 		if (cipherAlgorithm == "AES")
-			aes_cbc_encode1(ki, c0, ki, iv_aes);//更新ki
-		//else if (cipherAlgorithm == "DESese")
+			aes_cbc_encode(ki, c0, ki, iv_aes,keyLength);//更新ki
+		//else if (cipherAlgorithm == "DESede")
 		//	KencTDES(ki, c0, ki, DES_ENCRYPT);//更新ki
 	}
 	LOG(INFO) << "x " << x<<'\n';
@@ -903,7 +887,7 @@ void testDHIM()
 	//	c1 = key1_check + key2_check;
 	//}
 	if (cipherAlgorithm == "AES")
-		aes_cbc_encode1(T_ICC, S_ICC, ki, iv_aes);//AES获得ki
+		aes_cbc_encode(T_ICC, S_ICC, ki, iv_aes,keyLength);//AES获得ki
 	//else if (cipherAlgorithm == "DESede")
 	//{
 	//	std::string key1 = S_ICC.substr(0, 8);
@@ -922,7 +906,7 @@ void testDHIM()
 		//if (keyLength == 192)
 		//	AesAddPaddingBytes(ki);//192AES填充
 		if (cipherAlgorithm == "AES")
-			aes_cbc_encode1(ki, c1, xi, iv_aes);//获得xi
+			aes_cbc_encode(ki, c1, xi, iv_aes,keyLength);//获得xi
 		//else if (cipherAlgorithm == "DESede")
 		//	KencTDES(ki, c1, xi, DES_ENCRYPT);//获得xi
 		xi = BinaryToHexString(xi);
@@ -930,8 +914,8 @@ void testDHIM()
 			xi.pop_back();
 		x = x + xi;//连接xi
 		if (cipherAlgorithm == "AES")
-			aes_cbc_encode1(ki, c0, ki, iv_aes);//更新ki
-		//else if (cipherAlgorithm == "DESese")
+			aes_cbc_encode(ki, c0, ki, iv_aes,keyLength);//更新ki
+		//else if (cipherAlgorithm == "DESede")
 		//	KencTDES(ki, c0, ki, DES_ENCRYPT);//更新ki
 	}
 	LOG(INFO) << "x " << x << '\n';
@@ -1211,8 +1195,8 @@ void AesAddPaddingBytes1(std::string& data) {
 void testECDHIM()
 {
 	EC_GROUP* ec_group = EC_GROUP_new(EC_GFp_mont_method());
-	ec_group = EC_GROUP_new_by_curve_name( NID_brainpoolP256r1);
-	int keyLength = 128;
+	ec_group = EC_GROUP_new_by_curve_name(NID_secp521r1);
+	int keyLength = 256;
 	string cipherAlgorithm = "AES";
 	BIGNUM* p = BN_new();
 	BIGNUM* a = BN_new();
@@ -1221,8 +1205,8 @@ void testECDHIM()
 	BIGNUM* xx = BN_new();
 	BIGNUM* yy = BN_new();
 	EC_POINT* g = EC_POINT_new(ec_group);
-	string s = HexStringToBinary("2923BE84E16CD6AE529049F1F1BBE9EB");
-	string t = HexStringToBinary("5DD4CBFC96F5453B130D890A1CDBAE32");
+	string s = HexStringToBinary("19E858D915E01145B674700D517997D2DE87B81F35E3C6DEE1425D9DE17CEC03");
+	string t = HexStringToBinary("18DE9A1B8DDF9DF7D67562EDCAC85230832E5692F2DE177A038206CD758FDB30");
 	BN_CTX* ctx = BN_CTX_new();
 	int ret = EC_GROUP_get_curve_GFp(ec_group, p, a, b, ctx);
 	LOG(INFO) << BN_bn2hex(p);
@@ -1235,7 +1219,7 @@ void testECDHIM()
 
 	int n = 0;
 	std::string iv_aes("\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", 16);//16字节初始向量,cbc函数内自带iv
-	std::string ki = "";
+	std::string ki(32,0);
 	std::string xi = "";
 	std::string x = "";
 	int log2 = getLog2(p);
@@ -1262,7 +1246,7 @@ void testECDHIM()
 		c1 = key1_check + key2_check;
 	}
 	if (cipherAlgorithm == "AES")
-		aes_cbc_encode1(t, s, ki, iv_aes);//AES获得ki
+		aes_cbc_encode(t, s, ki, iv_aes,keyLength);//AES获得ki
 	else if (cipherAlgorithm == "DESede")
 	{
 		std::string key1 = t.substr(0, 8);
@@ -1276,12 +1260,13 @@ void testECDHIM()
 	}
 	if (keyLength == 192)
 		ki = ki.substr(0, 24);//192AES截断
+	LOG(INFO) << "ki "<<BinaryToHexString(ki);
 	for (int i = 0; i < n; i++)
 	{
 		if (keyLength == 192)
 			AesAddPaddingBytes1(ki);//192AES填充
 		if (cipherAlgorithm == "AES")
-			aes_cbc_encode1(ki, c1, xi, iv_aes);//获得xi
+			aes_cbc_encode(ki, c1, xi, iv_aes,keyLength);//获得xi
 		else if (cipherAlgorithm == "DESede")
 			KencTDES1(c1, ki, xi, DES_ENCRYPT);//获得xi
 		xi = BinaryToHexString(xi);
@@ -1289,25 +1274,25 @@ void testECDHIM()
 			xi.pop_back();
 		x.append(xi.data(), xi.length());//连接xi
 		if (cipherAlgorithm == "AES")
-			aes_cbc_encode1(ki, c0, ki, iv_aes);//更新ki
-		else if (cipherAlgorithm == "DESese")
+			aes_cbc_encode(ki, c0, ki, iv_aes,keyLength);//更新ki
+		else if (cipherAlgorithm == "DESede")
 			KencTDES1(c0, ki, ki, DES_ENCRYPT);//更新ki
 	}
 	//TODO:在DES的情况下，k被认为等于128位，R(s, t)的输出应为128位。
 	if (cipherAlgorithm == "DESede")
 		x.resize(16);
-	LOG(INFO) << x;
+	LOG(INFO) << "x "<<x;
 	//取得了x
 	BIGNUM* x_bn = BN_new();
 
 	ret = BN_hex2bn(&x_bn, x.c_str());
 	ret = BN_nnmod(x_bn, x_bn, p, ctx);//随机数映射结果
-	LOG(INFO) << BN_bn2hex(x_bn);
+	LOG(INFO) << "Rp "<<BN_bn2hex(x_bn);
 	const BIGNUM* cofactor = BN_new();
 	cofactor = EC_GROUP_get0_cofactor(ec_group);
 	order = EC_GROUP_get0_order(ec_group);
-	LOG(INFO) << BN_bn2hex(order);
-	LOG(INFO) << BN_bn2hex(cofactor);
+	LOG(INFO) <<"order"<< BN_bn2hex(order);
+	LOG(INFO) << "cofactor"<<BN_bn2hex(cofactor);
 	//接下来做点映射
 	//step1
 	BIGNUM* alpha = BN_new();
@@ -1385,13 +1370,13 @@ void testECDHIM()
 		BN_mod_mul(X, X, cofactor, p, ctx);
 		BN_mod_mul(Y, Y, cofactor, p, ctx);
 	}
-	LOG(INFO) << BN_bn2hex(X);
-	LOG(INFO) << BN_bn2hex(Y);
+	LOG(INFO) << "X "<<BN_bn2hex(X);
+	LOG(INFO) << "Y "<<BN_bn2hex(Y);
 	EC_POINT* G_hat = EC_POINT_new(ec_group);
 	ret = EC_POINT_set_affine_coordinates_GFp(ec_group, G_hat, X, Y, ctx);//目前曲线cofactor都是1
-	LOG(INFO) << ret;
+	LOG(INFO) << "set coordinate "<<ret;
 	ret = EC_GROUP_set_generator(ec_group,G_hat,order,nullptr);
-	LOG(INFO) << ret;
+	LOG(INFO) << "set generator "<<ret;
 	EC_KEY* ec_key = EC_KEY_new();
 	if (!ec_key) {
 		LOG(ERROR) << "Failed to create EC key" << endl;
@@ -1409,6 +1394,11 @@ void testECDHIM()
 	}
 	const BIGNUM* pri1 = EC_KEY_get0_private_key(ec_key);
 	const EC_POINT* pub1 = EC_KEY_get0_public_key(ec_key);
+	BIGNUM* public_key_bn = EC_POINT_point2bn(ec_group, pub1, POINT_CONVERSION_UNCOMPRESSED, NULL, NULL);
+	char* public_key_hex_char = BN_bn2hex(public_key_bn);
+	string PKmap = public_key_hex_char;
+	LOG(INFO) << "PKMAP " << PKmap << endl;
+	PKmap = HexStringToBinary(PKmap);
 	BIGNUM* x1 = BN_new();
 	BIGNUM* y1 = BN_new();
 	ret = EC_POINT_get_affine_coordinates_GFp(ec_group,pub1,x1,y1,ctx);

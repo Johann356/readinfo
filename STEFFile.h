@@ -10,7 +10,7 @@
 
 #include "Ptypes.h"
 #include "EFFile.h"
-#define MAX_ST_EFFILE 22
+#define MAX_ST_EFFILE 23
 
 typedef struct STEFFileSystem;
 

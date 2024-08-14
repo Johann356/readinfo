@@ -229,7 +229,36 @@ void aes_cbc_decode(const std::string& key, std::string& inputdata, std::string&
 	dec = strRet;
 	return;
 }
+void aes_cbc_encode(const std::string& key, std::string& inputdata, std::string& enc, std::string& iv_str, int keyLength) {
 
+	unsigned char iv[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+	for (int i = 0; i < 16; ++i) {
+		iv[i] = iv_str[i];
+	}
+	std::string key_used;
+	if (keyLength == 192)
+		key_used = key.substr(0, 24);
+	else
+		key_used = key;
+	AES_KEY aes_key;
+	if (AES_set_encrypt_key((const unsigned char*)key_used.c_str(), key_used.length() * 8, &aes_key) < 0)
+	{
+		//assert(false);
+		return;
+	}
+	std::string strRet;
+	for (unsigned int i = 0; i < inputdata.length() / AES_BLOCK_SIZE; i++)
+	{
+		std::string str16 = inputdata.substr(i * AES_BLOCK_SIZE, AES_BLOCK_SIZE);
+		unsigned char out[AES_BLOCK_SIZE];
+		::memset(out, 0, AES_BLOCK_SIZE);
+		AES_cbc_encrypt((const unsigned char*)str16.c_str(), out, AES_BLOCK_SIZE, &aes_key, iv, AES_ENCRYPT);
+		strRet += std::string((const char*)out, AES_BLOCK_SIZE);
+	}
+	enc = strRet;
+	return;
+}
 std::string int2Hex(int val) {
 	std::stringstream ss;
 	// 整数转换为大写的十六进制字符串，且每个字节占用两个字符的宽度
@@ -316,12 +345,12 @@ bool compare_ignore_case(std::string& str1, std::string& str2) {
 }
 
 //str hex representation
-void string2bignum(std::string str, BIGNUM* num)
+void string2bignum(std::string& str, BIGNUM*& num)
 {
 	BN_hex2bn(&num, str.c_str());
 }
 //str hex representation
-void string2ecpoint(std::string str, EC_POINT* ec_point, EC_GROUP* ec)
+void string2ecpoint(std::string str, EC_POINT*& ec_point, EC_GROUP* ec)
 {
 	BN_CTX* ctx = BN_CTX_new();
 	int len = str.length();
@@ -348,7 +377,7 @@ void string2ecpoint(std::string str, EC_POINT* ec_point, EC_GROUP* ec)
 	}
 	BN_CTX_free(ctx1);
 }
-void get_G_hat(EC_GROUP* ec, EC_POINT* H, std::string s_str, const EC_POINT* G, EC_POINT* G_hat)
+void get_G_hat(EC_GROUP*& ec, EC_POINT*& H, std::string& s_str, const EC_POINT*& G, EC_POINT*& G_hat)
 {
 	BIGNUM* s = BN_new();
 	string2bignum(s_str, s);
@@ -366,7 +395,7 @@ void get_G_hat(EC_GROUP* ec, EC_POINT* H, std::string s_str, const EC_POINT* G, 
 		char* y1_char = BN_bn2hex(y1);
 		if (x1_char && y1_char)
 		{
-			LOG(INFO)<< "G mult s" << endl << x1_char << endl << y1_char << endl;
+			LOG(INFO)<< "G mult s" << endl << x1_char <<", " << y1_char << endl;
 		}
 		BN_CTX_free(ctx1);
 	}
@@ -385,7 +414,7 @@ void get_G_hat(EC_GROUP* ec, EC_POINT* H, std::string s_str, const EC_POINT* G, 
 		char* y1_char = BN_bn2hex(y1);
 		if (x1_char && y1_char)
 		{
-			LOG(INFO)<< "G_hat" << endl << x1_char << endl << y1_char << endl;
+			LOG(INFO)<< "G_hat" << endl << x1_char <<", " << y1_char << endl;
 		}
 		BN_CTX_free(ctx1);
 	}
@@ -395,7 +424,7 @@ void get_G_hat(EC_GROUP* ec, EC_POINT* H, std::string s_str, const EC_POINT* G, 
 	}
 }
 //g^s*H=g_hat
-void get_G_hat(DH*& dh, BIGNUM*& H, std::string s_str, const BIGNUM*& G, BIGNUM*& G_hat)
+void get_G_hat(DH*& dh, BIGNUM*& H, std::string& s_str, const BIGNUM*& G, BIGNUM*& G_hat)
 {
 	LOG(INFO)<< "get_G_hat" << endl;
 	BIGNUM* s = BN_new();
@@ -422,7 +451,6 @@ void get_shared_secret(EC_GROUP* ec, std::string private_key_ifd, std::string pu
 	EC_POINT* public_key = EC_POINT_new(ec);
 	string2ecpoint(public_key_chip, public_key, ec);
 	int ret = -1;
-	EC_POINT* public_key1_ifd = EC_POINT_new(ec);
 	ret = EC_POINT_mul(ec, shared_secret, NULL, public_key, private_key, ctx);
 	if (ret)
 	{
@@ -433,7 +461,7 @@ void get_shared_secret(EC_GROUP* ec, std::string private_key_ifd, std::string pu
 		char* y1_char = BN_bn2hex(y1);
 		if (x1_char && y1_char)
 		{
-			LOG(INFO)<< "shared_secret = public_key1_chip * private_key1_ifd" << endl << x1_char << endl << y1_char << endl;
+			LOG(INFO)<< "shared_secret = public_key1_chip * private_key1_ifd" << endl << x1_char <<", " << y1_char << endl;
 		}
 	}
 	else
@@ -586,7 +614,7 @@ void computeTIFD(std::string& KSmac, std::string& PKDH_ICC, std::string& oid, in
 		message.append(lengthtoBinary(length1));
 		message.append(PKDH_ICC);
 	}
-
+	LOG(INFO) << "TIC/TIFD message " << BinaryToHexString(message);
 	unsigned char mact[32] = { 0 };
 	size_t mactlen;
 	CMAC_CTX* ctx = CMAC_CTX_new();
@@ -671,6 +699,7 @@ void computeTIFD(std::string& KSmac, std::string& PKDH_ICC, std::string& oid, in
 		DES_cbc_encrypt((unsigned char*)inBuffer.data(), (unsigned char*)TIFD.data(), 8,
 			&enSchKey, &IV, DES_ENCRYPT);
 	}
+	LOG(INFO) << "TIC/TIFD "<<BinaryToHexString(TIFD);
 }
 
 int getNID(char idx) {
@@ -1218,28 +1247,46 @@ bool TestEcdsa(std::string& signature, std::string& randomData, std::string& DG1
 	ret = BN_hex2bn(&r_bn, r.c_str());
 	ret = BN_hex2bn(&s_bn, s.c_str());
 	//确定AA ECDSA使用哈希函数位数
+	std::string hashres_224(SHA224_DIGEST_LENGTH, 0);
+	SHA224((unsigned char*)rnd.data(), rnd.size(), (unsigned char*)hashres_224.data());
+	std::string hashres_224_hex = BinaryToHexString(hashres_224);
 	std::string hashres_256(SHA256_DIGEST_LENGTH, 0);
 	SHA256((unsigned char*)rnd.data(), rnd.size(), (unsigned char*)hashres_256.data());
 	std::string hashres_256_hex = BinaryToHexString(hashres_256);
 	std::string hashres_384(SHA384_DIGEST_LENGTH, 0);
 	SHA384((unsigned char*)rnd.data(), rnd.size(), (unsigned char*)hashres_384.data());
 	std::string hashres_384_hex = BinaryToHexString(hashres_384);
-
+	std::string hashres_512(SHA512_DIGEST_LENGTH, 0);
+	SHA512((unsigned char*)rnd.data(), rnd.size(), (unsigned char*)hashres_512.data());
+	std::string hashres_512_hex = BinaryToHexString(hashres_512);
 	// 验证签名
 	ECDSA_SIG* ecdsaSig = ECDSA_SIG_new();
 	if (!ecdsaSig) {
 		return false;
 	}
 	ret = ECDSA_SIG_set0(ecdsaSig, r_bn, s_bn);
+	const unsigned char* dgst_224 = (unsigned char*)hashres_224.c_str();
+	std::string dgst_224_str = (char*)dgst_224;
 	const unsigned char* dgst_256 = (unsigned char*)hashres_256.c_str();
 	std::string dgst_256_str = (char*)dgst_256;
 	const unsigned char* dgst_384 = (unsigned char*)hashres_384.c_str();
 	std::string dgst_384_str = (char*)dgst_384;
-
+	const unsigned char* dgst_512 = (unsigned char*)hashres_512.c_str();
+	std::string dgst_512_str = (char*)dgst_512;
 	// 验证签名
+	int ret_224 = ECDSA_do_verify(dgst_224, hashres_224.size(), ecdsaSig, eckey_pub);
 	int ret_256 = ECDSA_do_verify(dgst_256, hashres_256.size(), ecdsaSig, eckey_pub);
 	int ret_384 = ECDSA_do_verify(dgst_384, hashres_384.size(), ecdsaSig, eckey_pub);
-	if (ret_256 || ret_384) {
+	int ret_512 = ECDSA_do_verify(dgst_512, hashres_512.size(), ecdsaSig, eckey_pub);
+	if (ret_256 || ret_384|| ret_224|| ret_512) {
+		if (ret_224)
+			LOG(INFO) << "AA ECDSA SHA224";
+		else if(ret_256)
+			LOG(INFO) << "AA ECDSA SHA256";
+		else if (ret_384)
+			LOG(INFO) << "AA ECDSA SHA384";
+		else 
+			LOG(INFO) << "AA ECDSA SHA512";
 		LOG(INFO)<< "signature matched" << std::endl;
 		return true;
 	}

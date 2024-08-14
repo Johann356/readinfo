@@ -5,17 +5,26 @@ PACEInfo::PACEInfo()
     this->oid = "";
     this->version = 0;
     this->ParameterId = 0;
+    this->oid_origion = "";
 }
-PACEInfo::PACEInfo(std::string oid, int version, int parameterId)
+PACEInfo::PACEInfo(std::string oid, int version, int parameterId, std::string oid_origion)
 {
 	this->oid = oid;
 	this->version = version;
 	this->ParameterId = parameterId;
+    this->oid_origion = oid_origion;
 }
-
+char PACEInfo::getParameterId()
+{
+    return this->ParameterId;
+}
 std::string PACEInfo::getOID()
 {
 	return this->oid;
+}
+std::string PACEInfo::getOIDorigion()
+{
+    return this->oid_origion;
 }
 
 std::string PACEInfo::getOIDString()
